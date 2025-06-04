@@ -1,0 +1,24 @@
+{
+  "name": "career-service",
+  "version": "1.0.0",
+  "description": "API service for job listings and career information",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@notionhq/client": "^2.3.0",
+    "axios": "^1.9.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^4.18.2",
+    "imap-simple": "^5.1.0",
+    "mailparser": "^3.7.3"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.1"
+  }
+}
