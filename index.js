@@ -95,7 +95,9 @@ app.get('/', (req, res) => {
     }
   });
 });
-
+// Routes
+app.use('/api/jobs', require('./routes/jobs'));
+app.use('/api/career', require('./routes/career'));
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
