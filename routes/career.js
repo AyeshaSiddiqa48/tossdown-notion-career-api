@@ -9,11 +9,10 @@ const careerController = require('../controllers/careerController');
 router.post('/apply', careerController.submitApplication);
 
 // ✅ NEW: POST /api/career/update-status - Update status of an application
-//router.post('/career/update-status', careerController.updateApplicationStatus);
-
+router.post('/update-status', careerController.updateApplicationStatus);
 
 // ✅ DEBUG: Check Notion DB properties (temporary use only)
-//router.get('/career/debug-properties', careerController.debugDatabaseProperties);
+router.get('/debug-properties', careerController.debugDatabaseProperties);
 
 module.exports = router;
 
