@@ -15,6 +15,7 @@ async function getJobRecordsFromNotion() {
     const response = await notion.databases.query({
       database_id: databaseId
     });
+     
 
     if (response && response.results) {
       return response.results;
@@ -58,6 +59,8 @@ exports.getJobs = async (req, res) => {
       return res.status(500).json({ success: false, message: allRecords.error });
     }
     
+    
+
     // If an ID is present in the query string, find and return only that record
     if (requestedId) {
       const record = allRecords.find(record => record.id === requestedId);
