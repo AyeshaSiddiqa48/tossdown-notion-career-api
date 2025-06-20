@@ -170,3 +170,41 @@ exports.submitApplication = async (req, res) => {
   }
 };
 
+// controllers/careerController.js
+
+exports.updateApplicationStatus = async (req, res) => {
+  const { pageId, status } = req.body;
+
+  if (!pageId || !status) {
+    return res.status(400).json({
+      success: false,
+      message: 'Both pageId and status are required.'
+    });
+  }
+
+  try {
+    const response = await notion.pages.update({
+      page_id: pageId,
+      properties: {
+        'Status': {
+          select: {
+            name: status
+          }
+        }
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Status updated successfully',
+      data: response
+    });
+  } catch (error) {
+    console.error('Error updating status:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update status',
+      error: error.message
+    });
+  }
+};
