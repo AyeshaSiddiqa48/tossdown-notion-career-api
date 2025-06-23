@@ -22,6 +22,11 @@
     {
       "src": "/api/career/debug-properties",
       "dest": "/api/career/debug-properties.js"
+    },
+     
+    {
+      "src": "/api/applications",
+      "dest": "/api/applications.js"
     }
   ]
 } 

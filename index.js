@@ -22,7 +22,8 @@ app.options('*', cors(corsOptions));
 
 // Routes
 app.use('/api/jobs', require('./routes/jobs'));
-app.use('/api/career', require('./routes/career'));
+app.use('/api/career', require('./routes/career'))
+app.use('/api/applications', require('./routes/applications'));
 
 // Root route
 app.get('/', (req, res) => {
