@@ -9,46 +9,92 @@ const applicationDatabaseId =
   process.env.APPLICATION_DATABASE_ID || "1d921223-e79e-8164-8cd4-fa013f4dd093";
 
 
-// Function to get job records from Notion
+// Function to get all application records from Notion with pagination
 async function getApplicationsRecordsFromNotion() {
   try {
-    // Using the official Notion client
-    const response = await notion.databases.query({
-      database_id: applicationDatabaseId
-    });
-     
+    let allResults = [];
+    let hasMore = true;
+    let startCursor = undefined;
 
-    if (response && response.results) {
-      return response.results;
-    } else {
-      return { error: 'Failed to retrieve job records' };
-    }
-  } catch (error) {
-    console.error('Error fetching from Notion:', error);
-    
-    // Fallback to using axios if the Notion client fails
-    try {
-      const url = `https://api.notion.com/v1/databases/${applicationDatabaseId}/query`;
-      const headers = {
-        'Authorization': `Bearer ${process.env.NOTION_TOKEN || 'ntn_q88942775343WsZKAfos9DYmAhODSKSPmPmc19L6Xhc7L1'}`,
-        'Content-Type': 'application/json',
-        'Notion-Version': '2022-06-28'
+    // Keep fetching pages until we have all records
+    while (hasMore) {
+      const queryParams = {
+        database_id: applicationDatabaseId,
+        page_size: 100 // Maximum allowed by Notion API
       };
 
-      const response = await axios.post(url, {}, { headers });
-      
-      if (response.data && response.data.results) {
-        return response.data.results;
+      // Add start_cursor for pagination (except for first request)
+      if (startCursor) {
+        queryParams.start_cursor = startCursor;
+      }
+
+      const response = await notion.databases.query(queryParams);
+
+      if (response && response.results) {
+        allResults = allResults.concat(response.results);
+        hasMore = response.has_more;
+        startCursor = response.next_cursor;
+
+        console.log(`Fetched ${response.results.length} records. Total so far: ${allResults.length}`);
+      } else {
+        return { error: 'Failed to retrieve application records' };
+      }
+    }
+
+    console.log(`Successfully retrieved all ${allResults.length} application records from Notion`);
+    return allResults;
+
+  } catch (error) {
+    console.error('Error fetching from Notion:', error);
+
+    // Fallback to using axios if the Notion client fails
+    try {
+      let allResults = [];
+      let hasMore = true;
+      let startCursor = undefined;
+
+      while (hasMore) {
+        const url = `https://api.notion.com/v1/databases/${applicationDatabaseId}/query`;
+        const headers = {
+          'Authorization': `Bearer ${process.env.NOTION_TOKEN || 'ntn_q88942775343WsZKAfos9DYmAhODSKSPmPmc19L6Xhc7L1'}`,
+          'Content-Type': 'application/json',
+          'Notion-Version': '2022-06-28'
+        };
+
+        const requestBody = {
+          page_size: 100
+        };
+
+        if (startCursor) {
+          requestBody.start_cursor = startCursor;
+        }
+
+        const response = await axios.post(url, requestBody, { headers });
+
+        if (response.data && response.data.results) {
+          allResults = allResults.concat(response.data.results);
+          hasMore = response.data.has_more;
+          startCursor = response.data.next_cursor;
+
+          console.log(`Axios fallback: Fetched ${response.data.results.length} records. Total so far: ${allResults.length}`);
+        } else {
+          break;
+        }
+      }
+
+      if (allResults.length > 0) {
+        console.log(`Axios fallback: Successfully retrieved all ${allResults.length} application records`);
+        return allResults;
       }
     } catch (axiosError) {
       console.error('Axios fallback error:', axiosError);
     }
-    
-    return { error: 'Failed to retrieve job records' };
+
+    return { error: 'Failed to retrieve application records' };
   }
 }
 
-// Get jobs (all or by ID)
+// Get applications (all or by ID)
 exports.getApplications = async (req, res) => {
   try {
     // Get the 'id' query parameter from the URL
@@ -56,6 +102,8 @@ exports.getApplications = async (req, res) => {
     
     const allRecords = await getApplicationsRecordsFromNotion();
     
+    console.log(`Total records retrieved: ${allRecords.length}`);
+
     if (allRecords.error) {
       return res.status(500).json({ success: false, message: allRecords.error });
     }
@@ -76,7 +124,7 @@ exports.getApplications = async (req, res) => {
     // No specific ID, return all records
     res.json(allRecords);
   } catch (error) {
-    console.error('Error in getJobs:', error);
+    console.error('Error in getApplications:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
