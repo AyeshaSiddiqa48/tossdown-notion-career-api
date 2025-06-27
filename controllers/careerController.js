@@ -27,6 +27,9 @@ exports.submitApplication = async (req, res) => {
       linkedInprofile,
       resume,
       noticeperiod,
+      hr_interview,
+      technical_interview,
+      final_interview,
     } = req.body;
 
     // Validate required fields
@@ -72,6 +75,16 @@ exports.submitApplication = async (req, res) => {
         "Notice Period": {
           rich_text: [{ text: { content: noticeperiod || "" } }],
         },
+        "HR Interview": {
+          rich_text: [{ text: { content: hr_interview || "" } }],
+        },
+        "Technical Interview": {
+          rich_text: [{ text: { content: technical_interview || "" } }],
+        },
+        "Final Interview": {
+          rich_text: [{ text: { content: final_interview || "" } }],
+        },
+        
       },
     };
 
@@ -116,6 +129,9 @@ exports.submitApplication = async (req, res) => {
           linkedInprofile,
           resume,
           noticeperiod,
+          hr_interview,
+          technical_interview,
+          final_interview,
         } = req.body;
 
         // Prepare data for Notion API
@@ -152,6 +168,16 @@ exports.submitApplication = async (req, res) => {
             "Notice Period": {
               rich_text: [{ text: { content: noticeperiod || "" } }],
             },
+             "HR Interview": {
+          rich_text: [{ text: { content: hr_interview || "" } }],
+        },
+        "Technical Interview": {
+          rich_text: [{ text: { content: technical_interview || "" } }],
+        },
+        "Final Interview": {
+          rich_text: [{ text: { content: final_interview || "" } }],
+        },
+        
           },
         };
 
