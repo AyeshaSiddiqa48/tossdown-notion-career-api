@@ -99,33 +99,55 @@ exports.getApplications = async (req, res) => {
   try {
     // Get the 'id' query parameter from the URL
     const requestedId = req.query.id || null;
-    
+
     const allRecords = await getApplicationsRecordsFromNotion();
-    
+
     console.log(`Total records retrieved: ${allRecords.length}`);
 
     if (allRecords.error) {
       return res.status(500).json({ success: false, message: allRecords.error });
     }
-    
-    
+
+
 
     // If an ID is present in the query string, find and return only that record
     if (requestedId) {
       const record = allRecords.find(record => record.id === requestedId);
-      
+
       if (!record) {
         return res.status(404).json({ error: 'Record not found' });
       }
-      
+
       return res.json(record);
     }
-    
+
     // No specific ID, return all records
     res.json(allRecords);
   } catch (error) {
     console.error('Error in getApplications:', error);
     res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+
+
+const { submitInterviewData } = require('../utils/interviewService');
+
+// Submit interview results (HR, Technical, or Final)
+exports.submitInterview = async (req, res) => {
+  try {
+    const { applicationId, interviewType, interviewData } = req.body;
+
+    const result = await submitInterviewData(applicationId, interviewType, interviewData);
+    res.json(result);
+
+  } catch (error) {
+    console.error('Error in submitInterview:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while submitting interview',
+      error: error.message
+    });
   }
 };
 
