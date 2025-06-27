@@ -93,11 +93,20 @@ async function submitInterviewData(applicationId, interviewType, interviewData) 
 
   const mapping = propertyMapping[interviewTypeKey];
 
-  // Add calculated average score and timestamp to the interview data
+  // Restructure the data with questions and result separated
   const finalInterviewData = {
-    ...interviewData,
-    averageScore: averageScore,
-    submittedAt: new Date().toISOString()
+    questions: interviewData.questions || [],
+    result: {
+      comments: interviewData.comments || '',
+      final_score: averageScore,
+      submittedAt: new Date().toISOString(),
+      // Include any other fields from interviewData except questions and comments
+      ...Object.fromEntries(
+        Object.entries(interviewData).filter(([key]) =>
+          !['questions', 'comments'].includes(key)
+        )
+      )
+    }
   };
 
   // Update the interview field with complete JSON data
@@ -123,7 +132,7 @@ async function submitInterviewData(applicationId, interviewType, interviewData) 
     data: {
       applicationId,
       interviewType,
-      averageScore,
+      final_score: averageScore,
       submittedData: finalInterviewData,
       updatedAt: new Date().toISOString()
     }
