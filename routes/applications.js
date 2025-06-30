@@ -8,4 +8,7 @@ router.get('/', applicationController.getApplications);
 // POST /api/applications/interview - Submit interview results
 router.post('/interview', applicationController.submitInterview);
 
+// PUT /api/applications/update-questions - Update interview questions only
+router.put('/update-questions', applicationController.updateQuestions);
+
 module.exports = router;

@@ -151,3 +151,19 @@ exports.submitInterview = async (req, res) => {
   }
 };
 
+// Update interview questions only
+exports.updateQuestions = async (req, res) => {
+  try {
+    // Import the serverless function and call it
+    const updateQuestionsHandler = require('../api/applications/update-questions.js');
+    await updateQuestionsHandler(req, res);
+  } catch (error) {
+    console.error('Error in updateQuestions:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while updating questions',
+      error: error.message
+    });
+  }
+};
+

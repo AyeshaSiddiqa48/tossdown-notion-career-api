@@ -36,7 +36,11 @@ async function updateApplicationInNotion(applicationId, updateData) {
     return response;
   } catch (error) {
     console.error('Error updating application in Notion:', error);
-    
+    console.error('Error details:', error.message);
+    if (error.body) {
+      console.error('Error body:', error.body);
+    }
+
     // Fallback to axios
     try {
       const url = `https://api.notion.com/v1/pages/${applicationId}`;
@@ -46,10 +50,15 @@ async function updateApplicationInNotion(applicationId, updateData) {
         'Notion-Version': '2022-06-28'
       };
 
+      console.log('Trying axios fallback...');
       const response = await axios.patch(url, { properties: updateData }, { headers });
       return response.data;
     } catch (axiosError) {
       console.error('Axios fallback error:', axiosError);
+      console.error('Axios error details:', axiosError.message);
+      if (axiosError.response) {
+        console.error('Axios response data:', axiosError.response.data);
+      }
       throw axiosError;
     }
   }
@@ -61,6 +70,12 @@ async function submitInterviewData(applicationId, interviewType, interviewData) 
   if (!applicationId || !interviewType || !interviewData) {
     throw new Error('Missing required fields: applicationId, interviewType, and interviewData are required');
   }
+
+  // Debug logging
+  console.log('=== Interview Submission Debug ===');
+  console.log('Application ID:', applicationId);
+  console.log('Interview Type:', interviewType);
+  console.log('Interview Data:', JSON.stringify(interviewData, null, 2));
 
   // Validate interview type
   const validInterviewTypes = ['hr', 'technical', 'final'];
@@ -120,6 +135,11 @@ async function submitInterviewData(applicationId, interviewType, interviewData) 
       }
     ]
   };
+
+  // Debug logging
+  console.log(`Attempting to update ${interviewType} interview for application ${applicationId}`);
+  console.log(`Property field: ${mapping.interviewField}`);
+  console.log(`Update data:`, JSON.stringify(updateData, null, 2));
 
   // Update the record in Notion
   await updateApplicationInNotion(applicationId, updateData);
