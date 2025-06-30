@@ -1,5 +1,5 @@
 const { Client } = require('@notionhq/client');
-const axios = require('axios');
+const { updateApplicationInNotion } = require('../../utils/interviewService');
 
 // Initialize Notion client
 const notion = new Client({
@@ -8,41 +8,12 @@ const notion = new Client({
 
 // This API only updates question text, not scores
 
-// Function to update application record in Notion
-async function updateApplicationInNotion(applicationId, updateData) {
-  try {
-    const response = await notion.pages.update({
-      page_id: applicationId,
-      properties: updateData
-    });
-
-    return response;
-  } catch (error) {
-    console.error('Error updating application in Notion:', error);
-    
-    // Fallback to axios
-    try {
-      const url = `https://api.notion.com/v1/pages/${applicationId}`;
-      const headers = {
-        'Authorization': `Bearer ${process.env.NOTION_TOKEN || 'ntn_q88942775343WsZKAfos9DYmAhODSKSPmPmc19L6Xhc7L1'}`,
-        'Content-Type': 'application/json',
-        'Notion-Version': '2022-06-28'
-      };
-
-      const response = await axios.patch(url, { properties: updateData }, { headers });
-      return response.data;
-    } catch (axiosError) {
-      console.error('Axios fallback error:', axiosError);
-      throw axiosError;
-    }
-  }
-}
-
 // Function to get current interview data from Notion
 async function getCurrentInterviewData(applicationId, interviewType) {
   try {
+    console.log(`Retrieving page data for application: ${applicationId}`);
     const response = await notion.pages.retrieve({ page_id: applicationId });
-    
+
     const propertyMapping = {
       'hr': 'HR Interview',
       'technical': 'Technical Interview',
@@ -50,24 +21,42 @@ async function getCurrentInterviewData(applicationId, interviewType) {
     };
 
     const propertyName = propertyMapping[interviewType.toLowerCase()];
+    console.log(`Looking for property: ${propertyName}`);
+
     const property = response.properties[propertyName];
 
     if (property && property.rich_text && property.rich_text.length > 0) {
       const content = property.rich_text[0].text.content;
+      console.log(`Found content length: ${content ? content.length : 0}`);
+
       if (content && content.trim()) {
         try {
-          return JSON.parse(content);
+          const parsedData = JSON.parse(content);
+          console.log('Successfully parsed interview data');
+          return parsedData;
         } catch (parseError) {
           console.error('Error parsing interview data JSON:', parseError);
-          console.error('Content that failed to parse:', content);
+          console.error('Content that failed to parse:', content.substring(0, 200) + '...');
           return null;
         }
+      } else {
+        console.log('Property exists but content is empty');
+        return null;
       }
+    } else {
+      console.log(`Property ${propertyName} not found or has no content`);
+      return null;
     }
 
-    return null;
   } catch (error) {
     console.error('Error retrieving current interview data:', error);
+    console.error('Error details:', error.message);
+
+    // If it's a 404 error, the page doesn't exist
+    if (error.status === 404) {
+      console.error('Application page not found in Notion database');
+    }
+
     return null;
   }
 }
@@ -130,7 +119,8 @@ module.exports = async (req, res) => {
       console.log(`No existing ${interviewType} interview data found`);
       return res.status(404).json({
         success: false,
-        message: `No existing ${interviewType} interview data found for this application`
+        message: `No existing ${interviewType} interview data found for this application. Please submit the interview first using POST /api/applications/interview, then update questions.`,
+        hint: "Use the interview submission API first to create the interview data, then use this API to update questions."
       });
     }
 
