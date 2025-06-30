@@ -26,13 +26,66 @@ async function getCurrentInterviewData(applicationId, interviewType) {
     const property = response.properties[propertyName];
 
     if (property && property.rich_text && property.rich_text.length > 0) {
-      const content = property.rich_text[0].text.content;
+      let content = property.rich_text[0].text.content;
       console.log(`Found content length: ${content ? content.length : 0}`);
 
       if (content && content.trim()) {
         try {
+          // Clean up content - remove markdown code blocks if present
+          content = content.replace(/^```\n?/, '').replace(/\n?```$/, '').trim();
+
+          // Handle truncated JSON by trying to fix common issues
+          if (content.includes('"resu') && !content.includes('"result"')) {
+            // Fix truncated "result" field
+            content = content.replace(/,\s*"resu[^"]*$/, '');
+            if (!content.includes('"result"')) {
+              // Add missing result section
+              if (content.endsWith(']')) {
+                content += ', "result": {"final_score": "", "comments": ""}';
+              }
+            }
+          }
+
+          // Handle other truncation patterns
+          if (content.includes('Unterminated string') || content.endsWith('"')) {
+            // Try to close unterminated strings
+            const lastQuote = content.lastIndexOf('"');
+            if (lastQuote > 0 && content.substring(lastQuote + 1).trim() === '') {
+              // String was cut off, close it properly
+              content = content.substring(0, lastQuote + 1);
+              if (!content.endsWith('}')) {
+                content += '}';
+              }
+            }
+          }
+
+          // Ensure proper JSON closure
+          let openBraces = (content.match(/{/g) || []).length;
+          let closeBraces = (content.match(/}/g) || []).length;
+          while (closeBraces < openBraces) {
+            content += '}';
+            closeBraces++;
+          }
+
+          console.log('Content after cleanup (last 100 chars):', content.substring(content.length - 100));
+
           const parsedData = JSON.parse(content);
           console.log('Successfully parsed interview data');
+
+          // Fix malformed question objects
+          if (parsedData.questions) {
+            parsedData.questions = parsedData.questions.map(q => {
+              if (q.question && typeof q.question === 'object' && q.question.question !== undefined) {
+                // Fix malformed structure: {"question": {"question": "text"}} -> {"question": "text"}
+                return {
+                  ...q,
+                  question: q.question.question || ""
+                };
+              }
+              return q;
+            });
+          }
+
           return parsedData;
         } catch (parseError) {
           console.error('Error parsing interview data JSON:', parseError);
@@ -127,26 +180,33 @@ module.exports = async (req, res) => {
     console.log('Current interview data found:', JSON.stringify(currentData, null, 2));
 
     // Update only the question text, preserve all scores and other data
-    const updatedQuestions = currentData.questions.map((currentQuestion, index) => {
-      if (index < questions.length) {
-        // Update only the question text, keep all other fields (score, maxScore, notes)
-        return {
-          ...currentQuestion,
-          question: questions[index].question || questions[index] // Support both object and string format
-        };
-      }
-      return currentQuestion; // Keep original question if no update provided
-    });
+    const updatedQuestions = [];
 
-    // If new questions are provided beyond existing ones, add them with default scores
-    if (questions.length > currentData.questions.length) {
-      for (let i = currentData.questions.length; i < questions.length; i++) {
+    // Process all questions from the input
+    for (let i = 0; i < questions.length; i++) {
+      const newQuestionText = questions[i].question || questions[i]; // Support both object and string format
+
+      if (i < currentData.questions.length) {
+        // Update existing question - preserve all data except question text
         updatedQuestions.push({
-          question: questions[i].question || questions[i],
-          score: 0, // Default score for new questions
-          maxScore: 5,
-          notes: ""
+          ...currentData.questions[i],
+          question: newQuestionText
         });
+      } else {
+        // Add new question with default values
+        updatedQuestions.push({
+          question: newQuestionText,
+          score: currentData.questions[0]?.score || 0, // Use same score format as existing
+          maxScore: currentData.questions[0]?.maxScore || 5,
+          notes: currentData.questions[0]?.notes || ""
+        });
+      }
+    }
+
+    // If there are fewer new questions than existing ones, keep the remaining with original text
+    if (questions.length < currentData.questions.length) {
+      for (let i = questions.length; i < currentData.questions.length; i++) {
+        updatedQuestions.push(currentData.questions[i]);
       }
     }
 
