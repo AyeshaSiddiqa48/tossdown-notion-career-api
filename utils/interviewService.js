@@ -139,33 +139,96 @@ async function submitInterviewData(applicationId, interviewType, interviewData) 
     ]
   };
 
+  // For HR interviews, save the HR final score
+  if (interviewTypeKey === 'hr') {
+    updateData[mapping.finalScoreField] = {
+      rich_text: [
+        {
+          type: 'text',
+          text: {
+            content: JSON.stringify({
+              hr_score: averageScore,
+              submittedAt: new Date().toISOString()
+            }, null, 2)
+          }
+        }
+      ]
+    };
+    console.log(`HR final score saved: ${averageScore}`);
+  }
+
   // For technical interviews, calculate combined score with HR interview
   if (interviewTypeKey === 'technical') {
     try {
       // Fetch the application to get HR interview data
       const response = await notion.pages.retrieve({ page_id: applicationId });
-      
+
       // Extract HR interview data if it exists
       let hrScore = 0;
-      if (response.properties && response.properties['HR Interview'] && 
-          response.properties['HR Interview'].rich_text && 
+      let hrExists = false;
+
+      if (response.properties && response.properties['HR Interview'] &&
+          response.properties['HR Interview'].rich_text &&
           response.properties['HR Interview'].rich_text.length > 0) {
-        
+
         const hrInterviewText = response.properties['HR Interview'].rich_text[0].text.content;
         try {
           const hrInterviewData = JSON.parse(hrInterviewText);
           if (hrInterviewData.result && hrInterviewData.result.final_score) {
             hrScore = parseFloat(hrInterviewData.result.final_score) || 0;
+            hrExists = true;
           }
         } catch (parseError) {
           console.error('Error parsing HR interview data:', parseError);
         }
       }
-      
-      // Calculate combined average score (HR + Technical) / 2
-      const combinedScore = Math.round(((hrScore + averageScore) / 2) * 100) / 100;
-      
-      // Add combined score to update data
+
+      // Validate that HR interview exists before proceeding
+      if (!hrExists) {
+        console.warn('Warning: HR interview not found. Technical interview submitted without combined score calculation.');
+        // Still save technical score but without combined calculation
+        updateData[mapping.finalScoreField] = {
+          rich_text: [
+            {
+              type: 'text',
+              text: {
+                content: JSON.stringify({
+                  technical_score: averageScore,
+                  hr_score: 0,
+                  combined_average: 0,
+                  note: "HR interview not completed yet"
+                }, null, 2)
+              }
+            }
+          ]
+        };
+      } else {
+        // Calculate combined average score (HR + Technical) / 2
+        const combinedScore = Math.round(((hrScore + averageScore) / 2) * 100) / 100;
+
+        // Add combined score to update data
+        updateData[mapping.finalScoreField] = {
+          rich_text: [
+            {
+              type: 'text',
+              text: {
+                content: JSON.stringify({
+                  technical_score: averageScore,
+                  hr_score: hrScore,
+                  combined_average: combinedScore,
+                  submittedAt: new Date().toISOString()
+                }, null, 2)
+              }
+            }
+          ]
+        };
+
+        console.log(`Combined score calculation: HR (${hrScore}) + Technical (${averageScore}) = ${combinedScore}`);
+      }
+
+    } catch (error) {
+      console.error('Error calculating combined score:', error);
+      // Fallback: save technical score only
       updateData[mapping.finalScoreField] = {
         rich_text: [
           {
@@ -173,18 +236,14 @@ async function submitInterviewData(applicationId, interviewType, interviewData) 
             text: {
               content: JSON.stringify({
                 technical_score: averageScore,
-                hr_score: hrScore,
-                combined_average: combinedScore
+                hr_score: 0,
+                combined_average: 0,
+                error: "Failed to retrieve HR interview data"
               }, null, 2)
             }
           }
         ]
       };
-      
-      console.log(`Combined score calculation: HR (${hrScore}) + Technical (${averageScore}) = ${combinedScore}`);
-      
-    } catch (error) {
-      console.error('Error calculating combined score:', error);
     }
   }
 
@@ -198,16 +257,29 @@ async function submitInterviewData(applicationId, interviewType, interviewData) 
 
   console.log(`Successfully updated ${interviewType} interview for application ${applicationId} with score ${averageScore}`);
 
+  // Prepare return data with additional score information
+  const returnData = {
+    applicationId,
+    interviewType,
+    final_score: averageScore,
+    submittedData: finalInterviewData,
+    updatedAt: new Date().toISOString()
+  };
+
+  // Add combined score info for technical interviews
+  if (interviewTypeKey === 'technical' && updateData[mapping.finalScoreField]) {
+    try {
+      const scoreData = JSON.parse(updateData[mapping.finalScoreField].rich_text[0].text.content);
+      returnData.combined_score_info = scoreData;
+    } catch (error) {
+      console.error('Error parsing score data for return:', error);
+    }
+  }
+
   return {
     success: true,
     message: `${interviewType.charAt(0).toUpperCase() + interviewType.slice(1)} interview submitted successfully`,
-    data: {
-      applicationId,
-      interviewType,
-      final_score: averageScore,
-      submittedData: finalInterviewData,
-      updatedAt: new Date().toISOString()
-    }
+    data: returnData
   };
 }
 
