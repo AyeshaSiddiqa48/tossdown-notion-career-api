@@ -180,3 +180,19 @@ exports.updateQuestions = async (req, res) => {
   }
 };
 
+// Update application status
+exports.updateStatus = async (req, res) => {
+  try {
+    // Import the serverless function and call it
+    const updateStatusHandler = require('../api/applications/update-status.js');
+    await updateStatusHandler(req, res);
+  } catch (error) {
+    console.error('Error in updateStatus:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while updating status',
+      error: error.message
+    });
+  }
+};
+

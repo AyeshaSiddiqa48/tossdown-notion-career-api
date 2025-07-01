@@ -11,4 +11,7 @@ router.post('/interview', applicationController.submitInterview);
 // PUT /api/applications/update-questions - Update interview questions only
 router.put('/update-questions', applicationController.updateQuestions);
 
+// PUT /api/applications/update-status - Update application status
+router.put('/update-status', applicationController.updateStatus);
+
 module.exports = router;
