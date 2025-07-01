@@ -96,13 +96,16 @@ async function submitInterviewData(applicationId, interviewType, interviewData) 
   // Map interview types to Notion property names
   const propertyMapping = {
     'hr': {
-      interviewField: 'HR Interview'
+      interviewField: 'HR Interview',
+      finalScoreField: 'HR Final Score'
     },
     'technical': {
-      interviewField: 'Technical Interview'
+      interviewField: 'Technical Interview',
+      finalScoreField: 'Technical Final Score'
     },
     'final': {
-      interviewField: 'Final Interview'
+      interviewField: 'Final Interview',
+      finalScoreField: 'Final Score'
     }
   };
 
@@ -136,6 +139,55 @@ async function submitInterviewData(applicationId, interviewType, interviewData) 
     ]
   };
 
+  // For technical interviews, calculate combined score with HR interview
+  if (interviewTypeKey === 'technical') {
+    try {
+      // Fetch the application to get HR interview data
+      const response = await notion.pages.retrieve({ page_id: applicationId });
+      
+      // Extract HR interview data if it exists
+      let hrScore = 0;
+      if (response.properties && response.properties['HR Interview'] && 
+          response.properties['HR Interview'].rich_text && 
+          response.properties['HR Interview'].rich_text.length > 0) {
+        
+        const hrInterviewText = response.properties['HR Interview'].rich_text[0].text.content;
+        try {
+          const hrInterviewData = JSON.parse(hrInterviewText);
+          if (hrInterviewData.result && hrInterviewData.result.final_score) {
+            hrScore = parseFloat(hrInterviewData.result.final_score) || 0;
+          }
+        } catch (parseError) {
+          console.error('Error parsing HR interview data:', parseError);
+        }
+      }
+      
+      // Calculate combined average score (HR + Technical) / 2
+      const combinedScore = Math.round(((hrScore + averageScore) / 2) * 100) / 100;
+      
+      // Add combined score to update data
+      updateData[mapping.finalScoreField] = {
+        rich_text: [
+          {
+            type: 'text',
+            text: {
+              content: JSON.stringify({
+                technical_score: averageScore,
+                hr_score: hrScore,
+                combined_average: combinedScore
+              }, null, 2)
+            }
+          }
+        ]
+      };
+      
+      console.log(`Combined score calculation: HR (${hrScore}) + Technical (${averageScore}) = ${combinedScore}`);
+      
+    } catch (error) {
+      console.error('Error calculating combined score:', error);
+    }
+  }
+
   // Debug logging
   console.log(`Attempting to update ${interviewType} interview for application ${applicationId}`);
   console.log(`Property field: ${mapping.interviewField}`);
@@ -164,3 +216,7 @@ module.exports = {
   calculateAverageScore,
   updateApplicationInNotion
 };
+
+
+
+
