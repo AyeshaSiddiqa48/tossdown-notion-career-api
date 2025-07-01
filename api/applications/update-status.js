@@ -17,24 +17,25 @@ async function updateApplicationStatus(applicationId, status) {
     }
 
     // Validate status values (you can customize these based on your Notion database)
-    const validStatuses = [
-      'Applied',
-      'Under Review', 
-      'HR Interview Scheduled',
-      'HR Interview Completed',
-      'Technical Interview Scheduled', 
-      'Technical Interview Completed',
-      'Final Interview Scheduled',
-      'Final Interview Completed',
-      'Offer Extended',
-      'Hired',
-      'Rejected',
-      'Withdrawn'
-    ];
+    // const validStatuses = [
+    //   'Applied',
+    //   'Under Review', 
+    //   'HR Interview Scheduled',
+    //   'HR Interview Completed',
+    //   'Technical Interview Scheduled', 
+    //   'Technical Interview Completed',
+    //   'Final Interview Scheduled',
+    //   'Final Interview Completed',
+    //   'Offer Extended',
+    //   'Hired',
+    //   'Rejected',
+    //   'Withdrawn',
+    //   'Applicant Status',
+    // ];
 
-    if (!validStatuses.includes(status)) {
-      throw new Error(`Invalid status. Must be one of: ${validStatuses.join(', ')}`);
-    }
+    // if (!validStatuses.includes(status)) {
+    //   throw new Error(`Invalid status. Must be one of: ${validStatuses.join(', ')}`);
+    // }
 
     console.log('=== Update Status Debug ===');
     console.log('Application ID:', applicationId);
