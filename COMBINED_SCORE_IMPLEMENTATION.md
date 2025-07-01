@@ -8,12 +8,15 @@ The interview system now properly implements combined score calculation when tec
 ### 1. HR Interview Submission
 When an HR interview is submitted:
 - ✅ Calculates average score from HR interview questions (1-5 scale)
-- ✅ Saves HR interview data in `HR Interview` field
-- ✅ **NEW**: Saves HR final score in `HR Final Score` field with structure:
+- ✅ Saves HR interview data in `HR Interview` field with complete structure including final score:
 ```json
 {
-  "hr_score": 3.5,
-  "submittedAt": "2025-07-01T09:04:48.326Z"
+  "questions": [...],
+  "result": {
+    "comments": "Good candidate",
+    "final_score": 1.67,
+    "submittedAt": "2025-07-01T09:04:48.326Z"
+  }
 }
 ```
 

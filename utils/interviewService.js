@@ -96,8 +96,8 @@ async function submitInterviewData(applicationId, interviewType, interviewData) 
   // Map interview types to Notion property names
   const propertyMapping = {
     'hr': {
-      interviewField: 'HR Interview',
-      finalScoreField: 'HR Final Score'
+      interviewField: 'HR Interview'
+      // HR doesn't have a separate final score field - score is stored in the interview data
     },
     'technical': {
       interviewField: 'Technical Interview',
@@ -139,22 +139,10 @@ async function submitInterviewData(applicationId, interviewType, interviewData) 
     ]
   };
 
-  // For HR interviews, save the HR final score
+  // For HR interviews, we don't need to save to a separate final score field
+  // The HR score will be retrieved from the HR Interview field when technical interview is submitted
   if (interviewTypeKey === 'hr') {
-    updateData[mapping.finalScoreField] = {
-      rich_text: [
-        {
-          type: 'text',
-          text: {
-            content: JSON.stringify({
-              hr_score: averageScore,
-              submittedAt: new Date().toISOString()
-            }, null, 2)
-          }
-        }
-      ]
-    };
-    console.log(`HR final score saved: ${averageScore}`);
+    console.log(`HR interview submitted with score: ${averageScore}`);
   }
 
   // For technical interviews, calculate combined score with HR interview

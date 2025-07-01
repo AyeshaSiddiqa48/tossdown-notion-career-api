@@ -136,7 +136,20 @@ const { submitInterviewData } = require('../utils/interviewService');
 // Submit interview results (HR, Technical, or Final)
 exports.submitInterview = async (req, res) => {
   try {
+    // Debug logging
+    console.log('=== Controller Debug ===');
+    console.log('Request method:', req.method);
+    console.log('Request headers:', req.headers);
+    console.log('Request body:', req.body);
+    console.log('Body type:', typeof req.body);
+    console.log('Body keys:', req.body ? Object.keys(req.body) : 'No body');
+
     const { applicationId, interviewType, interviewData } = req.body;
+
+    console.log('Extracted values:');
+    console.log('- applicationId:', applicationId, '(type:', typeof applicationId, ')');
+    console.log('- interviewType:', interviewType, '(type:', typeof interviewType, ')');
+    console.log('- interviewData:', !!interviewData, '(type:', typeof interviewData, ')');
 
     const result = await submitInterviewData(applicationId, interviewType, interviewData);
     res.json(result);
