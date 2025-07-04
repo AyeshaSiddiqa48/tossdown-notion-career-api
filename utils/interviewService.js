@@ -154,32 +154,72 @@ async function submitInterviewData(applicationId, interviewType, interviewData) 
     console.log(`${interviewType} interview submitted with score: ${averageScore}`);
   }
 
-  // For final interviews, calculate total average of all three interviews
-  if (interviewTypeKey === 'final') {
-    try {
-      // Fetch the application to get HR and Technical final scores
-      const response = await notion.pages.retrieve({ page_id: applicationId });
+  // Calculate and save total score based on available interviews
+  await calculateAndSaveTotalScore(applicationId, interviewTypeKey, averageScore, updateData);
 
-      let hrScore = 0;
-      let technicalScore = 0;
-      let finalScore = averageScore;
+// Function to calculate and save total score based on available interviews
+async function calculateAndSaveTotalScore(applicationId, currentInterviewType, currentScore, updateData) {
+  try {
+    // Fetch the application to get existing interview scores
+    const response = await notion.pages.retrieve({ page_id: applicationId });
 
-      // Extract HR Final Score
-      if (response.properties && response.properties['HR Final Score'] &&
+    let hrScore = null;
+    let technicalScore = null;
+    let finalScore = null;
+
+    // Extract existing scores from the application
+    if (response.properties) {
+      // Get HR Final Score
+      if (response.properties['HR Final Score'] &&
           response.properties['HR Final Score'].rich_text &&
           response.properties['HR Final Score'].rich_text.length > 0) {
-        hrScore = parseFloat(response.properties['HR Final Score'].rich_text[0].text.content) || 0;
+        hrScore = parseFloat(response.properties['HR Final Score'].rich_text[0].text.content) || null;
       }
 
-      // Extract Technical Final Score
-      if (response.properties && response.properties['Technical Final Score'] &&
+      // Get Technical Final Score
+      if (response.properties['Technical Final Score'] &&
           response.properties['Technical Final Score'].rich_text &&
           response.properties['Technical Final Score'].rich_text.length > 0) {
-        technicalScore = parseFloat(response.properties['Technical Final Score'].rich_text[0].text.content) || 0;
+        technicalScore = parseFloat(response.properties['Technical Final Score'].rich_text[0].text.content) || null;
       }
 
-      // Calculate total average of all three interviews
-      const totalAverage = Math.round(((hrScore + technicalScore + finalScore) / 3) * 100) / 100;
+      // Get Final Score
+      if (response.properties['Final Score'] &&
+          response.properties['Final Score'].rich_text &&
+          response.properties['Final Score'].rich_text.length > 0) {
+        finalScore = parseFloat(response.properties['Final Score'].rich_text[0].text.content) || null;
+      }
+    }
+
+    // Update the current interview score
+    if (currentInterviewType === 'hr') {
+      hrScore = currentScore;
+    } else if (currentInterviewType === 'technical') {
+      technicalScore = currentScore;
+    } else if (currentInterviewType === 'final') {
+      finalScore = currentScore;
+    }
+
+    // Calculate total score based on available interviews
+    const availableScores = [];
+    let scoreDetails = [];
+
+    if (hrScore !== null) {
+      availableScores.push(hrScore);
+      scoreDetails.push(`HR(${hrScore})`);
+    }
+    if (technicalScore !== null) {
+      availableScores.push(technicalScore);
+      scoreDetails.push(`Technical(${technicalScore})`);
+    }
+    if (finalScore !== null) {
+      availableScores.push(finalScore);
+      scoreDetails.push(`Final(${finalScore})`);
+    }
+
+    if (availableScores.length > 0) {
+      // Calculate average of available scores
+      const totalAverage = Math.round((availableScores.reduce((sum, score) => sum + score, 0) / availableScores.length) * 100) / 100;
 
       // Save total average to Total Score field
       updateData['Total Score'] = {
@@ -193,14 +233,16 @@ async function submitInterviewData(applicationId, interviewType, interviewData) 
         ]
       };
 
-      console.log(`Total average calculation: HR (${hrScore}) + Technical (${technicalScore}) + Final (${finalScore}) = ${totalAverage}`);
-
-    } catch (error) {
-      console.error('Error calculating total average:', error);
-      // Fallback: save final score only without total calculation
-      console.warn('Warning: Could not calculate total average. Final interview score saved individually.');
+      console.log(`Total score calculation: ${scoreDetails.join(' + ')} = ${totalAverage} (${availableScores.length} interview${availableScores.length > 1 ? 's' : ''})`);
+    } else {
+      console.warn('No interview scores available for total calculation');
     }
+
+  } catch (error) {
+    console.error('Error calculating total score:', error);
+    console.warn('Warning: Could not calculate total score. Individual interview score saved only.');
   }
+}
 
   // Debug logging
   console.log(`Attempting to update ${interviewType} interview for application ${applicationId}`);
@@ -221,8 +263,8 @@ async function submitInterviewData(applicationId, interviewType, interviewData) 
     updatedAt: new Date().toISOString()
   };
 
-  // Add total score info for final interviews
-  if (interviewTypeKey === 'final' && updateData['Total Score']) {
+  // Add total score info for all interview types
+  if (updateData['Total Score']) {
     try {
       const totalScore = parseFloat(updateData['Total Score'].rich_text[0].text.content);
       returnData.total_average_score = totalScore;
