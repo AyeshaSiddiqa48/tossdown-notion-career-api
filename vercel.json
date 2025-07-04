@@ -39,10 +39,6 @@
     {
       "src": "/api/applications/update-status",
       "dest": "/api/applications/update-status.js"
-    },
-    {
-      "src": "/api/applications/get-applications",
-      "dest": "/api/applications/get-applications.js"
     }
   ]
 }
