@@ -31,7 +31,8 @@ GET {{baseUrl}}/api/applications/get-applications
     "page_size": 20,
     "has_more": true,
     "next_cursor": "CURSOR_VALUE",
-    "total_in_page": 20
+    "total_in_page": 20,
+    "total_count": 513
   }
 }
 ```
@@ -58,6 +59,13 @@ pm.test("Has pagination metadata", function () {
     pm.expect(jsonData.pagination).to.have.property('page_size');
     pm.expect(jsonData.pagination).to.have.property('has_more');
     pm.expect(jsonData.pagination).to.have.property('next_cursor');
+    pm.expect(jsonData.pagination).to.have.property('total_count');
+});
+
+pm.test("First page has total count", function () {
+    const jsonData = pm.response.json();
+    pm.expect(jsonData.pagination.total_count).to.be.a('number');
+    pm.expect(jsonData.pagination.total_count).to.be.greaterThan(0);
 });
 
 // Store cursor for next request
@@ -91,6 +99,11 @@ pm.test("Next page returns different records", function () {
     const jsonData = pm.response.json();
     pm.expect(jsonData.data).to.have.lengthOf.greaterThan(0);
     pm.expect(jsonData.pagination.current_page).to.equal(1); // Page number is for reference
+});
+
+pm.test("Subsequent pages don't have total count", function () {
+    const jsonData = pm.response.json();
+    pm.expect(jsonData.pagination.total_count).to.be.null;
 });
 
 // Update cursor for further pagination
@@ -179,7 +192,7 @@ const jsonData = pm.response.json();
 console.log(`Request: ${pm.request.name}`);
 console.log(`Status: ${pm.response.status}`);
 if (jsonData.pagination) {
-    console.log(`Records: ${jsonData.data.length}, Has More: ${jsonData.pagination.has_more}`);
+    console.log(`Records: ${jsonData.data.length}, Has More: ${jsonData.pagination.has_more}, Total: ${jsonData.pagination.total_count || 'N/A'}`);
 }
 ```
 
@@ -197,15 +210,15 @@ if (jsonData.pagination) {
 Starting pagination tests at: 2025-07-01T15:30:00.000Z
 Request: Get First Page
 Status: 200
-Records: 20, Has More: true
+Records: 20, Has More: true, Total: 513
 
-Request: Get Custom Page Size  
+Request: Get Custom Page Size
 Status: 200
-Records: 5, Has More: true
+Records: 5, Has More: true, Total: 513
 
 Request: Get Next Page
 Status: 200
-Records: 20, Has More: true
+Records: 20, Has More: true, Total: N/A
 
 Request: Get Single Record
 Status: 200

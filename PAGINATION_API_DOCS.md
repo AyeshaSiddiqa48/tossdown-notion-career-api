@@ -74,10 +74,13 @@ GET /api/applications/get-applications?id=22321223-e79e-811d-aeff-ddf2dd9b581f
     "page_size": 20,
     "has_more": true,
     "next_cursor": "NEXT_CURSOR_VALUE",
-    "total_in_page": 20
+    "total_in_page": 20,
+    "total_count": 513
   }
 }
 ```
+
+**Note:** `total_count` is only provided on the first page (when no cursor is used) to optimize performance. Subsequent pages will have `total_count: null`.
 
 ### **Single Record Response (200)**
 ```json
@@ -116,7 +119,8 @@ function useApplicationsPagination(pageSize = 20) {
     page_size: pageSize,
     has_more: false,
     next_cursor: null,
-    total_in_page: 0
+    total_in_page: 0,
+    total_count: null
   });
 
   const fetchApplications = async (cursor = null, reset = false) => {
@@ -199,7 +203,10 @@ function ApplicationsList() {
   return (
     <div className="applications-list">
       <div className="header">
-        <h2>Applications ({applications.length} loaded)</h2>
+        <h2>
+          Applications ({applications.length} loaded
+          {pagination.total_count && ` of ${pagination.total_count} total`})
+        </h2>
         <button onClick={refresh} disabled={loading}>
           Refresh
         </button>

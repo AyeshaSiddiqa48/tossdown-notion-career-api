@@ -50,7 +50,8 @@ GET http://localhost:3000/api/applications/get-applications
     "page_size": 20,
     "has_more": true,
     "next_cursor": "22321223-e79e-811d-aeff-ddf2dd9b581f",
-    "total_in_page": 20
+    "total_in_page": 20,
+    "total_count": 513
   }
 }
 ```
@@ -66,7 +67,8 @@ function useApplicationsPagination(pageSize = 20) {
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
     has_more: false,
-    next_cursor: null
+    next_cursor: null,
+    total_count: null
   });
 
   const fetchApplications = async (cursor = null, reset = false) => {
@@ -113,7 +115,10 @@ function ApplicationsList() {
   return (
     <div className="applications-container">
       <div className="header">
-        <h2>Applications ({applications.length} loaded)</h2>
+        <h2>
+          Applications ({applications.length} loaded
+          {pagination.total_count && ` of ${pagination.total_count} total`})
+        </h2>
         <button onClick={refresh} disabled={loading}>Refresh</button>
       </div>
 
@@ -191,12 +196,13 @@ async function getApplications(options = {}) {
 
 ### **📊 Test Results:**
 ```
-✅ Default Pagination: 20 records returned
-✅ Custom Page Size: 5 records returned when limit=5
-✅ Cursor Navigation: Next page fetched successfully
+✅ Default Pagination: 20 records returned with total_count: 513
+✅ Custom Page Size: 5 records returned when limit=5 with total_count: 513
+✅ Cursor Navigation: Next page fetched successfully (total_count: null)
 ✅ Single Record: Correct record returned by ID
 ✅ Error Handling: Invalid limits rejected (400)
 ✅ Method Validation: Only GET requests allowed (405)
+✅ Total Count: Only provided on first page for performance optimization
 ```
 
 ## 🔧 **Key Features**
@@ -204,6 +210,7 @@ async function getApplications(options = {}) {
 - **🚀 Cursor-based Pagination**: Native Notion pagination for optimal performance
 - **⚙️ Configurable Page Size**: 1-100 records per request
 - **🎯 Single Record Lookup**: Direct access by application ID
+- **📊 Total Count**: Provides total application count on first page only (performance optimized)
 - **🛡️ Comprehensive Error Handling**: Detailed error messages and status codes
 - **🌐 CORS Enabled**: Ready for frontend integration
 - **☁️ Serverless Ready**: Optimized for Vercel deployment

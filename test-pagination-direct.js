@@ -35,6 +35,7 @@ function createMockRes() {
                 console.log(`  Success: ${data.success}`);
                 console.log(`  Records returned: ${data.data.length}`);
                 console.log(`  Pagination:`, data.pagination);
+                console.log(`  Total Count: ${data.pagination.total_count || 'Not provided'}`);
                 console.log(`  First record name: ${data.data[0]?.properties?.['Full Name']?.title?.[0]?.text?.content || 'N/A'}`);
             } else {
                 console.log(JSON.stringify(data, null, 2));
